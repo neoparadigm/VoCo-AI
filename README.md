@@ -19,7 +19,7 @@ Get structured root-cause analysis in seconds. No data leaves your machine.
 [![Next.js](https://img.shields.io/badge/Next.js-16-white?style=flat-square&logo=next.js&logoColor=black)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Ollama](https://img.shields.io/badge/Ollama-local-f59e0b?style=flat-square)](https://ollama.com)
-[![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-MLX_Whisper-000000?style=flat-square&logo=apple&logoColor=white)](https://github.com/ml-explore/mlx)
+[![Whisper STT](https://img.shields.io/badge/STT-Whisper_multi--platform-000000?style=flat-square&logo=apple&logoColor=white)](https://github.com/ml-explore/mlx)
 
 <br />
 
@@ -43,7 +43,7 @@ Everything runs on your hardware. No subscriptions. No data egress.
 
 | | |
 |---|---|
-| **Voice input** | Speak naturally — MLX Whisper transcribes on Apple Silicon Metal in ~27ms |
+| **Voice input** | Speak naturally — Whisper STT runs locally on Apple Silicon, CPU, or CUDA; cloud fallback via Groq |
 | **Structured output** | Every response: summary, root cause, factors, actions, business impact |
 | **BYO LLM** | Ollama, OpenAI, Azure, LM Studio, llama.cpp — one env var to swap |
 | **BYO data** | Plug in any API in a single file — ships with ServiceNow, Intune, M365, infra metrics |
@@ -196,15 +196,29 @@ Remote datacenter DNS failover triggered. 2847 devices affected. Primary DNS unr
 
 <br />
 
-## Voice (Apple Silicon)
+## Voice — works on all platforms
 
-VoCo uses [mlx-whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) — Whisper running natively on Apple Metal via the MLX framework.
+`setup.sh` detects your hardware and installs the right STT backend automatically. No manual configuration needed.
 
-- Model: `whisper-large-v3-turbo` (~800MB, downloads once on first use)
-- Latency: ~27ms on M-series chips for short queries
-- Audio: browser `MediaRecorder` → webm → PyAV decode → float32 16kHz → MLX Whisper
+| Platform | Backend | Latency | Install |
+|---|---|---|---|
+| Apple Silicon (M1–M4) | MLX Whisper | ~27ms | auto |
+| CPU — Linux / Windows / Intel Mac | faster-whisper int8 | ~2–8s | auto |
+| CUDA GPU | faster-whisper float16 | ~300ms | auto |
+| Any — cloud fallback | Groq Whisper API | ~300ms | set `VOCO_GROQ_API_KEY` |
+| Any — cloud fallback | OpenAI Whisper API | ~500ms | set `VOCO_OPENAI_API_KEY` |
 
-On non-Apple hardware, voice input is unavailable. Text input works everywhere.
+Override via `.env`:
+
+```bash
+VOCO_STT_BACKEND=auto            # default — detects platform
+VOCO_STT_BACKEND=faster-whisper  # force CPU/CUDA
+VOCO_STT_BACKEND=groq            # force Groq cloud (free tier)
+VOCO_STT_BACKEND=openai          # force OpenAI cloud
+VOCO_WHISPER_MODEL=base          # smaller/faster: base | small | medium | large-v3-turbo
+```
+
+All backends use the same Whisper model family — output quality is consistent. Audio path: browser `MediaRecorder` → webm → PyAV decode → float32 16kHz → your chosen backend.
 
 <br />
 
@@ -215,7 +229,7 @@ On non-Apple hardware, voice input is unavailable. Text input works everywhere.
 | Frontend | Next.js 16 · React 19 · Tailwind v4 · Framer Motion |
 | Backend | FastAPI · Python 3.11 · httpx |
 | LLM | Ollama / LiteLLM (any OpenAI-compatible endpoint) |
-| STT | mlx-whisper (Apple Silicon) · PyAV |
+| STT | MLX Whisper (Apple Silicon) · faster-whisper (CPU/CUDA) · Groq/OpenAI API |
 | Data | Mock JSON → swap with real APIs in `backend/tools/__init__.py` |
 
 <br />
