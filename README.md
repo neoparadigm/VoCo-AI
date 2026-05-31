@@ -1,147 +1,255 @@
-# VoCo AI — Voice-Native Enterprise Intelligence
+<div align="center">
 
-Ask questions about your enterprise data by voice or text. Get structured analysis: root cause, contributing factors, recommended actions, and business impact — in seconds, running entirely on your machine.
+<br />
 
-Built for IT operations, security, and infrastructure teams who need fast answers without sending data to the cloud.
+<img src="https://img.shields.io/badge/VoCo-AI-3b82f6?style=for-the-badge&labelColor=0f172a&color=3b82f6" alt="VoCo AI" height="36" />
+
+<br /><br />
+
+**Voice-Native Enterprise Intelligence — local, zero-cost, fully private**
+
+Ask questions about your infrastructure, incidents, and systems by voice or text.
+Get structured root-cause analysis in seconds. No data leaves your machine.
+
+<br />
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11-3b82f6?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-white?style=flat-square&logo=next.js&logoColor=black)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Ollama](https://img.shields.io/badge/Ollama-local-f59e0b?style=flat-square)](https://ollama.com)
+[![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-MLX_Whisper-000000?style=flat-square&logo=apple&logoColor=white)](https://github.com/ml-explore/mlx)
+
+<br />
+
+[Quick Start](#-quick-start) · [BYO LLM](#-bring-your-own-llm) · [BYO Data](#-bring-your-own-data) · [Architecture](#-architecture) · [Demo Scenarios](#-demo-scenarios)
+
+<br />
+
+</div>
 
 ---
 
-## What it does
+## What is VoCo?
 
-- **Voice or text input** — speak your question or type it; Whisper transcribes locally on Apple Silicon
-- **Structured analysis** — every response gives you summary, root cause, contributing factors, actions, and confidence score
-- **BYO LLM** — works with any Ollama model, or any OpenAI-compatible endpoint (OpenAI, Anthropic, Azure, Together, local llama.cpp servers)
-- **BYO data** — plug in your own enterprise sources in one file; ships with realistic mock scenarios (ServiceNow, Intune, M365, DNS/infra metrics)
-- **Fully local** — no telemetry, no cloud calls, no data leaves your machine
+VoCo is an open-source, voice-first intelligence layer for enterprise operations teams. You speak (or type) a question — VoCo fetches live data from your connected systems, runs it through a local LLM, and returns a structured briefing: root cause, contributing factors, recommended actions, and confidence score.
 
----
+Everything runs on your hardware. No subscriptions. No data egress.
 
-## One-command setup (~3 min)
+<br />
 
-**Prerequisites:** Python 3.11, Node 18+, and your LLM running (see below)
+## Feature highlights
+
+| | |
+|---|---|
+| **Voice input** | Speak naturally — MLX Whisper transcribes on Apple Silicon Metal in ~27ms |
+| **Structured output** | Every response: summary, root cause, factors, actions, business impact |
+| **BYO LLM** | Ollama, OpenAI, Azure, LM Studio, llama.cpp — one env var to swap |
+| **BYO data** | Plug in any API in a single file — ships with ServiceNow, Intune, M365, infra metrics |
+| **Adaptive UI** | Desktop and mobile layouts, light/dark mode, smooth model toggle |
+| **Zero cloud** | Fully local inference, no telemetry, no external calls |
+
+<br />
+
+## Quick start
+
+> **Prerequisites:** Python 3.11 · Node 18+ · [Ollama](https://ollama.com) running with at least one model pulled
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/voco.git && cd voco && bash setup.sh
-```
+# 1. Clone and run setup (installs all deps, creates .env)
+git clone https://github.com/neoparadigm/VoCo-AI.git && cd VoCo-AI && bash setup.sh
 
-Then start two terminals:
+# 2. Pull a model if you haven't already
+ollama pull mistral
 
-```bash
-# Terminal 1 — backend
+# 3. Start the backend (Terminal 1)
 source .venv/bin/activate
 uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload
 
-# Terminal 2 — frontend
+# 4. Start the frontend (Terminal 2)
 cd frontend && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open **[http://localhost:3000](http://localhost:3000)**
 
----
+Total time from clone to running: **under 5 minutes** on a fast connection.
 
-## BYO LLM
+<br />
 
-Edit `.env` (created by setup.sh):
+## Bring your own LLM
+
+Edit `.env` — one line to switch providers:
 
 ```bash
-# Ollama (default) — run: ollama pull mistral
+# Default: Ollama (local)
 VOCO_LLM_URL=http://localhost:11434
 VOCO_MODEL=mistral:latest
 
-# Other Ollama models
-VOCO_MODEL=gemma4:latest
-VOCO_MODEL=llama3.3:70b
+# Swap to any of these:
+VOCO_MODEL=gemma4:latest          # Ollama — deeper reasoning
+VOCO_MODEL=llama3.3:70b           # Ollama — highest quality local
 
-# OpenAI
 VOCO_LLM_URL=https://api.openai.com/v1
-VOCO_MODEL=openai/gpt-4o
+VOCO_MODEL=openai/gpt-4o          # OpenAI
 
-# Azure OpenAI
-VOCO_LLM_URL=https://YOUR_RESOURCE.openai.azure.com
-VOCO_MODEL=azure/gpt-4o
+VOCO_LLM_URL=https://YOUR.openai.azure.com
+VOCO_MODEL=azure/gpt-4o           # Azure OpenAI
 
-# Any llama.cpp / LM Studio / Ollama-compatible server
 VOCO_LLM_URL=http://localhost:1234/v1
-VOCO_MODEL=openai/local-model
+VOCO_MODEL=openai/local           # LM Studio / llama.cpp
 ```
 
-The model toggle in the UI maps to Ollama models by default. To change the options, edit `MODELS` in `frontend/app/page.tsx`.
+The model selector in the UI maps to Ollama models by default. To change the options shown, edit `MODELS` in `frontend/app/page.tsx`.
 
----
+<br />
 
-## BYO enterprise data
+## Bring your own data
 
-All data connectors live in **`backend/tools/__init__.py`**. Each tool is a plain function decorated with `@tool`. Replace the mock JSON reads with real API calls:
+All connectors live in **`backend/tools/__init__.py`**. Each tool is a plain Python function — replace the mock reads with real API calls:
 
 ```python
 @tool("ServiceNow")
 def servicenow_tool(query: str) -> str:
-    """Query ServiceNow for incidents, tickets, SLA data."""
-    # Replace with your real ServiceNow API call:
-    # resp = requests.get(f"{SN_URL}/api/now/table/incident", ...)
-    # return json.dumps(resp.json()["result"])
-    ...
-
-@tool("Splunk")
-def splunk_tool(query: str) -> str:
-    """Query Splunk for log anomalies and alert counts."""
-    ...
+    """Query ServiceNow for incidents and SLA data."""
+    # Drop in your real call:
+    resp = requests.get(f"{SN_INSTANCE}/api/now/table/incident",
+                        auth=(SN_USER, SN_PASS), params={"sysparm_limit": 10})
+    return json.dumps(resp.json()["result"])
 ```
 
-**Built-in mock tools** (swap any or all):
+<details>
+<summary><strong>Built-in tool slots (click to expand)</strong></summary>
 
-| Tool | What it returns |
-|---|---|
-| `ServiceNow` | Incidents, SLA breaches, ticket metadata |
-| `M365Metrics` | Enrollment failure rates, error distribution |
-| `IntuneStatus` | Device provisioning state, retry counts |
-| `InfraMetrics` | DNS latency, network health, failover state |
-| `IncidentContext` | Timeline, alerts, team sentiment |
+<br />
 
-Add as many tools as you like — each one's output is injected into the LLM context automatically.
+| Tool | Default mock | Replace with |
+|---|---|---|
+| `ServiceNow` | Incident + SLA data | ServiceNow REST API |
+| `M365Metrics` | Enrollment failure rates | Microsoft Graph API |
+| `IntuneStatus` | Device provisioning state | Intune Graph API |
+| `InfraMetrics` | DNS latency, network health | Datadog / Prometheus / CloudWatch |
+| `IncidentContext` | Timeline and alerts | PagerDuty / OpsGenie / Splunk |
 
----
+Add as many additional tools as you need — each tool's output is automatically injected into the LLM context.
 
-## Demo scenarios (included)
+</details>
 
-Three anonymized enterprise incidents to try immediately:
-
-- *"Why is device provisioning failing?"* — DNS latency cascade affecting 87 devices
-- *"What's blocking the cloud migration?"* — 34 exposed credentials, 817M API calls at risk
-- *"Tell me about the DNS failover issue"* — remote datacenter, 2847 devices affected
-
----
+<br />
 
 ## Architecture
 
 ```
-Voice/Text input
-      |
-      v
-[MLX Whisper STT]  — Apple Silicon Metal, ~27ms
-      |
-      v
-[FastAPI /reason]
-  prefetch_data()  — parallel tool calls, no LLM overhead
-  call_ollama()    — single-shot structured prompt to your LLM
-  parse_output()   — regex parser → typed JSON response
-      |
-      v
-[Next.js frontend] — adaptive layout, glass morphism UI
+User (voice or text)
+        │
+        ▼
+ [MLX Whisper STT]          Apple Silicon Metal · ~27ms · whisper-large-v3-turbo
+        │
+        ▼
+ [FastAPI /reason]
+   prefetch_data()  ──────► [ServiceNow] [M365] [Intune] [Infra] [Context]
+                                          ↓ all results merged
+   call_ollama()    ──────► [Local LLM]  system prompt + data + question → structured text
+   parse_output()   ──────► regex parser → typed JSON
+        │
+        ▼
+ [Next.js frontend]         Adaptive layout · glass morphism · Framer Motion
 ```
 
-**Stack:** FastAPI · Next.js 16 · MLX Whisper · Ollama/LiteLLM · Tailwind v4 · Framer Motion
+**Context engineering** happens in `backend/main.py`:
+- `SYSTEM_PROMPT` — role definition + exact output schema (structured contract)
+- `prefetch_data()` — pulls all tool outputs synchronously, no LLM overhead
+- `call_ollama()` — single-shot `[system, user]` prompt at `temperature=0.1`
 
----
+<br />
 
-## Voice (Apple Silicon only)
+## Demo scenarios
 
-STT uses [mlx-whisper](https://github.com/ml-explore/mlx-examples) (whisper-large-v3-turbo) on Apple Metal. The model (~800MB) downloads automatically on first voice query and is cached in `~/.cache/huggingface`.
+Three anonymised enterprise incidents are included to try immediately:
 
-On non-Apple hardware, voice input falls back to an error — text input works on all platforms.
+<details>
+<summary><strong>Scenario 1 — Device provisioning failures</strong></summary>
 
----
+> "Why is device provisioning failing?"
+
+87 devices stuck in provisioning. Root cause: DNS latency spike (3200ms vs 45ms baseline) causing resolution failures during Intune enrollment. Contributing: misconfigured upstream router, no DNS failover configured.
+
+</details>
+
+<details>
+<summary><strong>Scenario 2 — Cloud migration blocker</strong></summary>
+
+> "What's blocking the cloud migration?"
+
+34 exposed service account credentials found in migration scripts. 817M API calls at risk. Immediate action: rotate credentials and audit IAM policies before proceeding.
+
+</details>
+
+<details>
+<summary><strong>Scenario 3 — DNS failover incident</strong></summary>
+
+> "Tell me about the DNS failover issue"
+
+Remote datacenter DNS failover triggered. 2847 devices affected. Primary DNS unreachable for 47 minutes. Secondary DNS resolved within SLA but latency elevated for 3h post-failover.
+
+</details>
+
+<br />
+
+## Voice (Apple Silicon)
+
+VoCo uses [mlx-whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) — Whisper running natively on Apple Metal via the MLX framework.
+
+- Model: `whisper-large-v3-turbo` (~800MB, downloads once on first use)
+- Latency: ~27ms on M-series chips for short queries
+- Audio: browser `MediaRecorder` → webm → PyAV decode → float32 16kHz → MLX Whisper
+
+On non-Apple hardware, voice input is unavailable. Text input works everywhere.
+
+<br />
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16 · React 19 · Tailwind v4 · Framer Motion |
+| Backend | FastAPI · Python 3.11 · httpx |
+| LLM | Ollama / LiteLLM (any OpenAI-compatible endpoint) |
+| STT | mlx-whisper (Apple Silicon) · PyAV |
+| Data | Mock JSON → swap with real APIs in `backend/tools/__init__.py` |
+
+<br />
+
+## Project structure
+
+```
+VoCo-AI/
+├── backend/
+│   ├── main.py              # FastAPI app, LLM call, response parser
+│   ├── tools/__init__.py    # Enterprise data connectors (replace mocks here)
+│   ├── voice/
+│   │   ├── transcribe.py    # MLX Whisper STT
+│   │   └── speak.py         # TTS (mock — swap with Kokoro/ElevenLabs)
+│   ├── agents/              # CrewAI agent definitions (used in extended mode)
+│   └── memory/episodic.py   # SQLite query history
+├── frontend/
+│   ├── app/page.tsx         # Main UI — voice orb, input, results
+│   ├── app/components/      # VoiceOrb, OutputPanel, WaveformViz
+│   └── lib/api.ts           # Backend API client
+├── mock_data/incidents.json # 3 demo scenarios
+├── setup.sh                 # One-command setup
+└── docker-compose.yml       # Docker alternative
+```
+
+<br />
 
 ## License
 
-MIT
+MIT — use it, fork it, build on it.
+
+---
+
+<div align="center">
+
+Built with [Claude Code](https://claude.ai/code) · Running on Apple Silicon · Zero cloud dependencies
+
+</div>
