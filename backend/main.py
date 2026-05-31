@@ -33,6 +33,7 @@ from backend.memory.episodic import save_episode
 
 OLLAMA_MODEL    = os.getenv("VOCO_MODEL",       "mistral:latest")
 OLLAMA_BASE_URL = os.getenv("VOCO_LLM_URL",    "http://localhost:11434")
+USE_AGENTS      = os.getenv("VOCO_USE_AGENTS", "false").lower() == "true"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -259,13 +260,61 @@ async def transcribe_endpoint(request: TranscribeRequest):
     return TranscribeResponse(**result)
 
 
+def _run_agent_crew(question: str, data: str, model: str) -> str:
+    """Run the full CrewAI 4-agent pipeline (slow, deep reasoning)."""
+    from crewai import Crew, LLM, Task
+    from backend.agents.analyst import AnalystAgent
+    from backend.agents.reasoner import ReasonerAgent
+    from backend.agents.formatter import FormatterAgent
+
+    crew_llm = LLM(model=f"ollama/{model}", base_url=OLLAMA_BASE_URL, temperature=0.1)
+
+    analyst_b  = AnalystAgent()
+    reasoner_b = ReasonerAgent()
+    formatter_b = FormatterAgent()
+
+    analyst  = analyst_b.get_crewai_agent()
+    reasoner = reasoner_b.get_crewai_agent()
+    formatter = formatter_b.get_crewai_agent()
+
+    for agent in [analyst, reasoner, formatter]:
+        agent.llm = crew_llm
+        agent.max_iter = 1
+
+    analyze_task = Task(
+        description=f"Question: {question}\n\nEnterprise data:\n{data}\n\n" + analyst_b.get_task_description(),
+        agent=analyst, expected_output=analyst_b.get_expected_output()
+    )
+    reason_task = Task(
+        description=reasoner_b.get_task_description(),
+        agent=reasoner, context=[analyze_task], expected_output=reasoner_b.get_expected_output()
+    )
+    format_task = Task(
+        description=formatter_b.get_task_description(),
+        agent=formatter, context=[analyze_task, reason_task], expected_output=formatter_b.get_expected_output()
+    )
+
+    crew = Crew(agents=[analyst, reasoner, formatter],
+                tasks=[analyze_task, reason_task, format_task],
+                verbose=True, process="sequential")
+    return str(crew.kickoff())
+
+
 @app.post("/reason", response_model=ReasonResponse)
 async def reason_endpoint(request: ReasonRequest):
-    logger.info(f"Reason: '{request.question}' (role: {request.user_role})")
+    logger.info(f"Reason: '{request.question}' (role: {request.user_role}, agents: {USE_AGENTS})")
     try:
         model = request.model or OLLAMA_MODEL
         data = prefetch_data(request.question)
-        raw = await call_ollama(request.question, data, model)
+
+        if USE_AGENTS:
+            import asyncio
+            raw = await asyncio.get_event_loop().run_in_executor(
+                None, _run_agent_crew, request.question, data, model
+            )
+        else:
+            raw = await call_ollama(request.question, data, model)
+
         parsed = parse_crew_output(raw)
 
         # Persist to episodic memory

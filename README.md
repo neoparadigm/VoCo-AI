@@ -144,24 +144,50 @@ Add as many additional tools as you need — each tool's output is automatically
 User (voice or text)
         │
         ▼
- [MLX Whisper STT]          Apple Silicon Metal · ~27ms · whisper-large-v3-turbo
+ [Whisper STT]        MLX (Apple Silicon) · faster-whisper (CPU/CUDA) · Groq/OpenAI (cloud)
         │
         ▼
  [FastAPI /reason]
-   prefetch_data()  ──────► [ServiceNow] [M365] [Intune] [Infra] [Context]
-                                          ↓ all results merged
-   call_ollama()    ──────► [Local LLM]  system prompt + data + question → structured text
-   parse_output()   ──────► regex parser → typed JSON
+   prefetch_data() ──► [ServiceNow] [M365] [Intune] [InfraMetrics] [IncidentContext]
+                                     ↓ all results merged into context
+        │
+        ├─ Fast mode (default) ────► single-shot LLM call         ~10–30s
+        │   call_ollama()             structured prompt + data
+        │
+        └─ Agent mode ─────────────► CrewAI sequential pipeline   ~2–5 min
+            DataFetcher → Analyst → Reasoner → Formatter
         │
         ▼
- [Next.js frontend]         Adaptive layout · glass morphism · Framer Motion
+   parse_output() ───► regex parser → typed JSON
+        │
+        ▼
+ [Next.js frontend]   Adaptive layout · glass morphism · Framer Motion
 ```
 
-**Context engineering** happens in `backend/main.py`:
-- `SYSTEM_PROMPT` — role definition + exact output schema (structured contract)
-- `prefetch_data()` — pulls all tool outputs synchronously, no LLM overhead
-- `call_ollama()` — single-shot `[system, user]` prompt at `temperature=0.1`
+**Context engineering** in `backend/main.py`:
+- `SYSTEM_PROMPT` — role + exact output schema (the structured contract the parser depends on)
+- `prefetch_data()` — pulls all 5 tool outputs synchronously before any LLM call
+- `call_ollama()` — single `[system, user]` message at `temperature=0.1`, `num_predict=800`
 
+<br />
+
+## CrewAI agent pipeline
+
+VoCo ships with a full 4-agent [CrewAI](https://github.com/crewaiinc/crewai) pipeline in `backend/agents/`. The default fast mode bypasses it for speed, but the agents power deeper multi-step reasoning:
+
+| Agent | Role | Does |
+|---|---|---|
+| **DataFetcher** | Enterprise Data Retriever | Queries all connected tools, filters relevant signals |
+| **Analyst** | Systems Analyst | Identifies patterns, correlates metrics across sources |
+| **Reasoner** | Root Cause Specialist | Chains observations into causal hypotheses |
+| **Formatter** | Output Formatter | Enforces the structured response schema the parser reads |
+
+Each agent uses the same `@tool`-decorated connectors from `backend/tools/__init__.py`, runs sequentially via CrewAI's process engine, and is capped at `max_iter=1` to prevent runaway loops. The Formatter owns the output contract — its system prompt defines the exact field names (`SUMMARY:`, `ROOT_CAUSE:`, `ACTIONS:`, etc.) that the regex parser depends on.
+
+Enable agent mode in `.env`:
+```bash
+VOCO_USE_AGENTS=true   # deeper reasoning for complex multi-signal queries
+```
 <br />
 
 ## Demo scenarios
