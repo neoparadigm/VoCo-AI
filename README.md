@@ -2,7 +2,7 @@
 
 <br />
 
-<img src="https://img.shields.io/badge/VoCo-AI-3b82f6?style=for-the-badge&labelColor=0f172a&color=3b82f6" alt="VoCo AI" height="36" />
+
 
 <br /><br />
 
