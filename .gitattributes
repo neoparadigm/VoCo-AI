@@ -1,0 +1,7 @@
+*.py filter=redact
+*.tsx filter=redact
+*.ts filter=redact
+*.js filter=redact
+*.json filter=redact
+*.yml filter=redact
+*.md filter=redact
