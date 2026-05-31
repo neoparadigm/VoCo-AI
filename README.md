@@ -8,7 +8,7 @@
 
 <br /><br />
 
-**Voice-Native Enterprise Intelligence — local, zero-cost, fully private**
+**Voice-Native Enterprise Intelligence - local, fully private**
 
 Ask questions about your infrastructure, incidents, and systems by voice or text.
 Get structured root-cause analysis in seconds. No data leaves your machine.
@@ -34,9 +34,9 @@ Get structured root-cause analysis in seconds. No data leaves your machine.
 
 ## What is VoCo?
 
-VoCo is an open-source, voice-first intelligence layer for enterprise operations teams. You speak (or type) a question — VoCo fetches live data from your connected systems, runs it through a local LLM, and returns a structured briefing: root cause, contributing factors, recommended actions, and confidence score.
+VoCo is an open-source, voice-first intelligence layer for your enterprise. You speak (or type) a question - VoCo fetches live data from your connected systems, runs it through a local LLM, and returns a structured briefing: root cause, contributing factors, recommended & (or) execute actions, with a confidence score.
 
-Everything runs on your hardware. No subscriptions. No data egress.
+Everything runs on your hardware. No data egress.
 
 <br />
 
@@ -44,7 +44,7 @@ Everything runs on your hardware. No subscriptions. No data egress.
 
 | | |
 |---|---|
-| **Voice input** | Speak naturally — Whisper STT runs locally on Apple Silicon, CPU, or CUDA; cloud fallback via Groq |
+| **Voice input** | Speak naturally - Whisper STT runs locally on Apple Silicon, CPU, or CUDA; cloud fallback via Groq |
 | **Structured output** | Every response: summary, root cause, factors, actions, business impact |
 | **BYO LLM** | Ollama, OpenAI, Azure, LM Studio, llama.cpp — one env var to swap |
 | **BYO data** | Plug in any API in a single file — ships with ServiceNow, Intune, M365, infra metrics |
@@ -286,7 +286,7 @@ VoCo-AI/
 
 ## License
 
-MIT — use it, fork it, build on it.
+MIT - use it, fork it, build on it.
 
 ---
 
